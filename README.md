@@ -349,3 +349,167 @@ cert-manager-webhook-76fdf7c485-5d8rz      1/1     Running   0          5m9s
 try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
 ❯ 
 ```
+
+
+---
+
+### コントローラーの動作確認
+
+* arm は v3.8.7 がないっぽい
+
+```bash
+❯ make install
+test -s /Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/controller-gen || GOBIN=/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+test -s /Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/kustomize || { curl -Ss "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash -s -- 3.8.7 /Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin; }
+Version v3.8.7 does not exist or is not available for darwin/arm64.
+make: *** [/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/kustomize] Error 1
+
+try_kubebuilder/markdown-view on  main via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ 
+```
+
+* https://qiita.com/nakamasato/items/5a4018c73d7d1e6da025
+
+```bash
+$ export KUSTOMIZE_VERSION=v4.2.0
+$ make install
+```
+
+パスした
+
+```bash
+try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ export KUSTOMIZE_VERSION=v4.2.0
+
+try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ make install
+test -s /Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/controller-gen || GOBIN=/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+test -s /Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/kustomize || { curl -Ss "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash -s -- 4.2.0 /Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin; }
+{Version:kustomize/v4.2.0 GitCommit:d53a2ad45d04b0264bcee9e19879437d851cb778 BuildDate:2021-06-30T22:49:26Z GoOs:darwin GoArch:arm64}
+kustomize installed to /Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/kustomize
+/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/kustomize build config/crd | kubectl apply -f -
+customresourcedefinition.apiextensions.k8s.io/markdownviews.view.say3no.github.io created
+
+try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) took 5s 
+❯ ```
+
+---
+
+```bash
+❯ make deploy
+test -s /Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/controller-gen || GOBIN=/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+cd config/manager && /Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/kustomize edit set image controller=controller:latest
+/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/kustomize build config/default | kubectl apply -f -
+namespace/markdown-view-system unchanged
+customresourcedefinition.apiextensions.k8s.io/markdownviews.view.say3no.github.io unchanged
+serviceaccount/markdown-view-controller-manager unchanged
+role.rbac.authorization.k8s.io/markdown-view-leader-election-role unchanged
+clusterrole.rbac.authorization.k8s.io/markdown-view-manager-role configured
+clusterrole.rbac.authorization.k8s.io/markdown-view-metrics-reader unchanged
+clusterrole.rbac.authorization.k8s.io/markdown-view-proxy-role unchanged
+rolebinding.rbac.authorization.k8s.io/markdown-view-leader-election-rolebinding unchanged
+clusterrolebinding.rbac.authorization.k8s.io/markdown-view-manager-rolebinding unchanged
+clusterrolebinding.rbac.authorization.k8s.io/markdown-view-proxy-rolebinding unchanged
+service/markdown-view-controller-manager-metrics-service unchanged
+service/markdown-view-webhook-service unchanged
+deployment.apps/markdown-view-controller-manager unchanged
+certificate.cert-manager.io/markdown-view-serving-cert unchanged
+issuer.cert-manager.io/markdown-view-selfsigned-issuer unchanged
+mutatingwebhookconfiguration.admissionregistration.k8s.io/markdown-view-mutating-webhook-configuration configured
+validatingwebhookconfiguration.admissionregistration.k8s.io/markdown-view-validating-webhook-configuration configured
+
+try_kubebuilder/markdown-view on  main [!⇡] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ ```
+
+
+```bash
+❯  kubectl get pod -n markdown-view-system
+NAME                                                READY   STATUS    RESTARTS   AGE
+markdown-view-controller-manager-548cff7b6f-kqbjb   2/2     Running   0          4m59s
+
+try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ 
+```
+
+log がでている
+
+```bash
+
+❯ kubectl logs  -n markdown-view-system markdown-view-controller-manager-548cff7b6f-kqbjb -c manager -f
+1.6652454396743307e+09  INFO    controller-runtime.metrics      Metrics server is starting to listen    {"addr": "127.0.0.1:8080"}
+1.665245439674532e+09   INFO    controller-runtime.builder      Registering a mutating webhook  {"GVK": "view.say3no.github.io/v1, Kind=MarkdownView", "path": "/mutate-view-say3no-github-io-v1-markdownview"}
+1.665245439674574e+09   INFO    controller-runtime.webhook      Registering webhook     {"path": "/mutate-view-say3no-github-io-v1-markdownview"}
+1.6652454396745944e+09  INFO    controller-runtime.builder      Registering a validating webhook        {"GVK": "view.say3no.github.io/v1, Kind=MarkdownView", "path": "/validate-view-say3no-github-io-v1-markdownview"}
+1.665245439674616e+09   INFO    controller-runtime.webhook      Registering webhook     {"path": "/validate-view-say3no-github-io-v1-markdownview"}
+1.6652454396746435e+09  INFO    setup   starting manager
+1.6652454396748865e+09  INFO    Starting server {"path": "/metrics", "kind": "metrics", "addr": "127.0.0.1:8080"}
+1.6652454396749735e+09  INFO    Starting server {"kind": "health probe", "addr": "[::]:8081"}
+1.6652454396748748e+09  INFO    controller-runtime.webhook.webhooks     Starting webhook server
+1.6652454396750708e+09  INFO    controller-runtime.certwatcher  Updated current TLS certificate
+I1008 16:10:39.675084       1 leaderelection.go:248] attempting to acquire leader lease markdown-view-system/952d835c.say3no.github.io...
+1.6652454396751184e+09  INFO    controller-runtime.webhook      Serving webhook server  {"host": "", "port": 9443}
+1.665245439675223e+09   INFO    controller-runtime.certwatcher  Starting certificate watcher
+I1008 16:10:39.678102       1 leaderelection.go:258] successfully acquired lease markdown-view-system/952d835c.say3no.github.io
+1.665245439678144e+09   DEBUG   events  markdown-view-controller-manager-548cff7b6f-kqbjb_af5d9842-822e-49cc-8ecf-baa6cfcb51b4 became leader    {"type": "Normal", "object": {"kind":"Lease","namespace":"markdown-view-system","name":"952d835c.say3no.github.io","uid":"5452541e-a083-4cc8-b2d6-60171684fefc","apiVersion":"coordination.k8s.io/v1","resourceVersion":"8172"}, "reason": "LeaderElection"}
+1.6652454396785386e+09  INFO    Starting EventSource    {"controller": "markdownview", "controllerGroup": "view.say3no.github.io", "controllerKind": "MarkdownView", "source": "kind source: *v1.MarkdownView"}
+1.6652454396785576e+09  INFO    Starting Controller     {"controller": "markdownview", "controllerGroup": "view.say3no.github.io", "controllerKind": "MarkdownView"}
+1.665245439780741e+09   INFO    Starting workers        {"controller": "markdownview", "controllerGroup": "view.say3no.github.io", "controllerKind": "MarkdownView", "worker count": 1}
+^C
+```
+
+別窓で イカ実行
+```bash
+❯ kubectl apply -f config/samples/view_v1_markdownview.yaml
+markdownview.view.say3no.github.io/markdownview-sample created
+```
+
+200 を返していそう
+
+```bash
+...
+1.665245439780741e+09   INFO    Starting workers        {"controller": "markdownview", "controllerGroup": "view.say3no.github.io", "controllerKind": "MarkdownView", "worker count": 1}
+1.6652463090219948e+09  DEBUG   controller-runtime.webhook.webhooks     received request        {"webhook": "/mutate-view-say3no-github-io-v1-markdownview", "UID": "7bcedd20-cac1-42c5-ac6d-76103c0b3db2", "kind": "view.say3no.github.io/v1, Kind=MarkdownView", "resource": {"group":"view.say3no.github.io","version":"v1","resource":"markdownviews"}}
+1.6652463090221906e+09  INFO    markdownview-resource   default {"name": "markdownview-sample"}
+1.6652463090224829e+09  DEBUG   controller-runtime.webhook.webhooks     wrote response  {"webhook": "/mutate-view-say3no-github-io-v1-markdownview", "code": 200, "reason": "", "UID": "7bcedd20-cac1-42c5-ac6d-76103c0b3db2", "allowed": true}
+1.665246309026078e+09   DEBUG   controller-runtime.webhook.webhooks     received request        {"webhook": "/validate-view-say3no-github-io-v1-markdownview", "UID": "cd347bf1-609f-4282-a0e2-787ca188c7a5", "kind": "view.say3no.github.io/v1, Kind=MarkdownView", "resource": {"group":"view.say3no.github.io","version":"v1","resource":"markdownviews"}}
+1.6652463090261595e+09  INFO    markdownview-resource   validate create {"name": "markdownview-sample"}
+1.6652463090261793e+09  DEBUG   controller-runtime.webhook.webhooks     wrote response  {"webhook": "/validate-view-say3no-github-io-v1-markdownview", "code": 200, "reason": "", "UID": "cd347bf1-609f-4282-a0e2-787ca188c7a5", "allowed": true}
+```
+
+### 開発の流れ
+
+#### Controller の実装が変わったときは、以下のコマンドで docker build -> load to kind
+
+```bash
+$ make docker-build
+$ kind load docker-image controller:latest
+```
+
+#### CRD に変更がある場合は、以下
+
+```bash
+$ make install
+```
+
+非互換な変換をした場合は、事前に `make uninstall`
+
+#### CRD 以外のマニフェストファイルに変更がある場合
+
+```bash
+$ make deploy
+```
+
+#### 次のコマンドでカスタムコントローラの再起動
+
+```bash
+$ kubectl rollout restart -n markdown-view-system deployment markdown-view-controller-manager
+```
+
+### Tilt による効率的な開発
+
+要するに変更を watch して action をするタスクランナーっぽい。
+こっちは後回しでいいや
+
