@@ -241,8 +241,32 @@ try_kubebuilder/markdown-view on  main [!?] via 🐹 v1.19.2 on ☁️  (ap-n
 
 ```
 
+---
 
+生成されたものたち
 
+- api
+  - v1
+    - `markdownView_webhook.go` <- だいじ
+    - `webhook_suite_test.go`
+- config
+  - certmanager <- Admission Webhook を利用するためには証明書が必要。そのための諸 yaml
+    - `certificate.yaml`
+    - `kustoization.yaml`
+    - `kustomizeconfig.yaml`
+  - default
+    - `manager_webhook_patch.yaml`
+    - `webhookcainjection_patch.yaml`
+  - webhook <- マニフェストファイルのみなさん
+    - `kustomization.yaml`
+    - `kustomizeconfig.yaml`
+    - `manifests.yaml`
+    - `service.yaml`
+
+### kustomization.yaml の編集
+
+* 生成直後の状態では make manifests コマンドで マニフェストを生成しても、 Webhook機能が利用できるようにはなっていない
+* こいつがコミットされた diff を見てくれ~~~
 
 
 ## カスタムコントローラーの動作確認
