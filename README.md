@@ -205,7 +205,44 @@ $ kubebuilder create api --group view --version v1 --kind MarkdownView
     - `view_v1_markdownview.yaml`
 
 
-
 ## Webhookの雛形作成
+
+* k8s の拡張機能: admission webhook 
+  * 特定のリソースおｗ作成/更新する際に Webhook API を呼び出し、バリデーションやリソースの書き換えを行うための機能
+    * ansible の handler みたいな
+* `kubebuilder` で生成可能な 3種類 の Webhook Option 。 主に使うのは上位2つかな
+  * `--programmatic-validation`: リソースのバリデーションの Webhook
+  * `--defaulting`: リソースのフィールドにデフォルト値を設定するための Webhook
+  * `--conversion`: カスタムリソースのバージョンアップ時にリソースの変換をおこなうための Webhhok
+
+```bash
+$ kubebuilder create webhook --group view --verison v1 --kind MarkdownView --programmatic-validation --defaulting
+try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ ../kubebuilder create webhook --group view --version v1 --kind MarkdownView --programmatic-validation --defaulting
+Writing kustomize manifests for you to edit...
+Writing scaffold for you to edit...
+api/v1/markdownview_webhook.go
+Update dependencies:
+$ go mod tidy
+Running make:
+$ make generate
+/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+Next: implement your new Webhook and generate the manifests with:
+$ make manifests
+```
+
+---
+
+
+```bash
+try_kubebuilder/markdown-view on  main [!?] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ make manifests 
+/Users/sanosei/github.com/say3no/try_kubebuilder/markdown-view/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+
+```
+
+
+
+
 
 ## カスタムコントローラーの動作確認
