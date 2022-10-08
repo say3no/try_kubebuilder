@@ -163,12 +163,47 @@ try_kubebuilder on  main [!?] on ☁️  (ap-northeast-1)
 ```bash
 $ kubebuilder init --domain say3no.github.io --repo this/repo
 ```
+
+
 ## APIの雛形作成
 
 ```bash
-
-
+$ kubebuilder create api --group view --version v1 --kind MarkdownView
 ```
+
+生成するカスタムリソースの GVK 
+
+* `--group`: リソースが属するグループ名を指定
+* `--version`: 適切なバージョンを指定。今後使用が変わる可能性ｇありそうなら `v1alpha1` とかにするとか
+* `--kind` : 作成するリソースの名前
+
+
+---
+
+- api
+  - v1
+    - `markdownview_types.go` <- `api/v1` 配下はこいつだけ弄るとおもってればおｋ
+    - ...
+    - ...
+- cotroller
+  - `markdownview_controller.go` <- CR Controller 本体
+  - `suite_test.go`
+- config
+  - crd <- Custom Resource Definison
+    - bases
+      - `view.say3no.github.io_markdownviews.yaml`
+    - `kustomization.yaml`
+    - `kustomizeconfig.yaml`
+    - patches
+      - `cainjection_in_markdwonviews.yaml`
+      - `webhook_in_markdownviews.yaml`
+  - rbac
+    - `role.yaml`
+    - `markdownview_editor_role.yaml`
+    - `markdownview_viewer_role.yaml`
+  - samples
+    - `view_v1_markdownview.yaml`
+
 
 
 ## Webhookの雛形作成
