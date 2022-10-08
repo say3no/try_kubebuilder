@@ -1,0 +1,6 @@
+domain: say3no.github.io
+layout:
+- go.kubebuilder.io/v3
+projectName: markdown-view
+repo: github.com/try_kubebuilder
+version: "3"
