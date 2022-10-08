@@ -160,16 +160,16 @@ try_kubebuilder on  main [!?] on ☁️  (ap-northeast-1)
 
 ## プロジェクトの雛形作成
 
-* Resource
-  * Deployment 
-  * ?
-
+```bash
+$ kubebuilder init --domain say3no.github.io --repo this/repo
 ```
-
-
-```
-
 ## APIの雛形作成
+
+```bash
+
+
+```
+
 
 ## Webhookの雛形作成
 
