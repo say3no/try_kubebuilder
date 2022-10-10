@@ -22,15 +22,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	viewv1 "github.com/try_kubebuilder/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 )
 
 // MarkdownViewReconciler reconciles a MarkdownView object
@@ -116,36 +116,33 @@ func (r *MarkdownViewReconciler) Reconcile_pagination(ctx context.Context, req c
 	}
 }
 
-func (r *MarkdownViewReconciler) Reconcile_create(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	dep := appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sample",
-			Namespace: "default",
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: pointer.Int32Ptr(1),
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": "nginx"},
+func (r *MarkdownViewReconciler) Reconcile_createOrUpdate(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	svc := &corev1.Service{}
+	svc.SetNamespace("default")
+	svc.SetName("sample")
+
+	op, err := ctrl.CreateOrUpdate(ctx, r.Client, svc, func() error {
+		svc.Spec.Type = corev1.ServiceTypeClusterIP
+		svc.Spec.Selector = map[string]string{"app": "nginx"}
+		svc.Spec.Ports = []corev1.ServicePort{
+			{
+				Name:       "http",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       80,
+				TargetPort: intstr.FromInt(80),
 			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": "nginx"},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx:latest",
-						},
-					},
-				},
-			},
-		},
-	}
-	err := r.Create(ctx, &dep)
+		}
+		return nil
+	})
+
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	if op != controllerutil.OperationResultNone {
+		fmt.Printf("Deployment %s\n", op)
+	}
+
 	return ctrl.Result{}, nil
 }
 
