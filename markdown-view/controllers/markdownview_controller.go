@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -144,6 +145,36 @@ func (r *MarkdownViewReconciler) Reconcile_createOrUpdate(ctx context.Context, r
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *MarkdownViewReconciler) Reconcile_patchMerge(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// 並行性の問題に対応する
+	// patch は特定の フィールドだけを競合することなく更新できる
+	// 「ほぼ」同時に pach が投げられたら、たんにキューを処理することになる？
+
+	// 案1. `client.MergeFrom` または `client.StrategicMergeFrom` を活用する
+	// .    二者は リスト要素の更新方法が異なる
+	//      a. `client.MergeFrom`
+	// .       * 指定した要素で上書き
+	//      b. `client.StrategicMergeFrom`
+	// .       * patchStrategy に応じて要素が追加,または更新
+	// 案2. Server-Side Apply を利用する
+
+	// 今回は 案1. a. `client.MergeFrom` でいく
+
+	var dep appsv1.Deployment
+	err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: "sample"}, &dep)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	newDep := dep.DeepCopy()
+	newDep.Spec.Replicas = pointer.Int32Ptr(3)
+	patch := client.MergeFrom(&dep)
+
+	err = r.Patch(ctx, newDep, patch)
+
+	return ctrl.Result{}, err
 }
 
 // SetupWithManager sets up the controller with the Manager.
