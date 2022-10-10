@@ -25,23 +25,39 @@ import (
 
 // MarkdownViewSpec defines the desired state of MarkdownView
 type MarkdownViewSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Markdowns contain the markdown files you want to display.
+	// The key indicates the file name and must not overlap with the keys.
+	// The value is the content in markdown format.
 
-	// Foo is an example field of MarkdownView. Edit markdownview_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinProperties=1
+	Markdowns map[string]string `json:"markdowns,omitempty"`
+
+	// Replicas is the number of viewers.
+
+	// +kubebuilder:default=1
+	// +optional
+	Replicas int32 `json:"replicas,omitempty"`
+
+	// ViewerImage is the image name of the viewer
+	// +optional
+	ViewerImage string `json:"viewerImage,omitempty"`
 }
 
-// MarkdownViewStatus defines the observed state of MarkdownView
-type MarkdownViewStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
+// +kuberbuilder:validation:Enum=NotReady;Available;Healthy
+type MarkdownViewStatus string
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+const (
+	MarkdownViewNotReady  = MarkdownViewStatus("NoReady")
+	MarkdownViewAvailable = MarkdownViewStatus("Available")
+	MarkdownViewHealthy   = MarkdownViewStatus("Healthy")
+)
 
-// MarkdownView is the Schema for the markdownviews API
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="REPLICAS",type="integer",JSONPath=".spec.replicas"
+// +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status"
+
 type MarkdownView struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -50,7 +66,7 @@ type MarkdownView struct {
 	Status MarkdownViewStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // MarkdownViewList contains a list of MarkdownView
 type MarkdownViewList struct {
