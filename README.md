@@ -845,3 +845,33 @@ try_kubebuilder/markdown-view on  main [!?] via 🐹 v1.19.2 on ☁️  (ap-n
 
 
 
+# controller-runtime
+
+* CC開発には k8s が標準で提供している `client-go`, `apimachinery`, `api` 等のパッケージを利用することになる
+* `controller-runtime` はこれらを抽象化し、よりかんたんにカスタムコントローラーを実装可能にしたライブラリ
+* 抽象化していると言っても、k8s のコンセtぷとに準拠する形で実装されており、オプションを指定することで、 `client-go` や `apimachinery` が提供している機能のほとんどを利用できる
+  * `controller-runtime` の設計コンセプト: https://github.com/kubernetes-sigs/kubebuilder/blob/master/DESIGN.md#controller-runtime
+
+`controller-runtime` が提供する代表的な Components 
+
+* `manager.Manager`
+  * 複数のコントローラーをまとめて管理するためのコンポーネント
+  * リーダー選出やメトリクスサーバーとしての機能など、カスタムコントローラーを実装するために必要な数多くの機能を提供
+* `client.Client`
+  * k8s の kube-apiserver とやり取りするためのクライアント
+  * 監視対象のリソースをインメモリにキャッシュする機能などを持ち、カスタムリソースも型安全に扱える
+* `reconcile.Reconciler`
+  * CC が実装すべきインターフェース
+
+## クライアントの使い方
+
+## Reconcile の実装
+
+## コントローラーのテスト
+
+## Webhook の実装
+## Webhook のテスト
+
+## リソースの削除 
+
+## Manager
