@@ -177,6 +177,20 @@ func (r *MarkdownViewReconciler) Reconcile_patchMerge(ctx context.Context, req c
 	return ctrl.Result{}, err
 }
 
+// Status は subresource にしている。このとき Update や Patch によって ステータスは更新できない。
+// 明示的に Status の client を用意してやる必要がある
+func (r *MarkdownViewReconciler) updateStatus(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	var dep appsv1.Deployment
+	err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: "sample"}, &dep)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	dep.Status.AvailableReplicas = 3
+	err = r.Status().Update(ctx, &dep)
+	return ctrl.Result{}, err
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *MarkdownViewReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
