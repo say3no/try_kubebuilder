@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,6 +28,9 @@ import (
 
 	viewv1 "github.com/try_kubebuilder/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 // MarkdownViewReconciler reconciles a MarkdownView object
@@ -68,6 +72,80 @@ func (r *MarkdownViewReconciler) Reconcile_get(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	fmt.Printf("Got Deployment: %#v\n", deployment)
+	return ctrl.Result{}, nil
+}
+
+func (r *MarkdownViewReconciler) Reconcile_list(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	var services corev1.ServiceList
+	err := r.List(ctx, &services, &client.ListOptions{
+		Namespace:     "default",
+		LabelSelector: labels.SelectorFromSet((map[string]string{"app": "sample"})),
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	for _, svc := range services.Items {
+		fmt.Println(svc.Name)
+	}
+	return ctrl.Result{}, nil
+}
+
+func (r *MarkdownViewReconciler) Reconcile_pagination(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	token := ""
+	for i := 0; ; i++ {
+		var services corev1.ServiceList
+		err := r.List(ctx, &services, &client.ListOptions{
+			Limit:    3,
+			Continue: token,
+		})
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		fmt.Printf("Page %d:\n", i)
+		for _, svc := range services.Items {
+			fmt.Println(svc.Name)
+		}
+		fmt.Println()
+
+		token = services.ListMeta.Continue
+		if len(token) == 0 {
+			return ctrl.Result{}, nil
+		}
+	}
+}
+
+func (r *MarkdownViewReconciler) Reconcile_create(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	dep := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "sample",
+			Namespace: "default",
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: pointer.Int32Ptr(1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "nginx"},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "nginx"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "nginx",
+							Image: "nginx:latest",
+						},
+					},
+				},
+			},
+		},
+	}
+	err := r.Create(ctx, &dep)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 
