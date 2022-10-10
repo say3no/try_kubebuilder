@@ -770,5 +770,28 @@ func init() {
 
 * 実際に生成されたコードに、変更を加えてみる。
 
+答え?のやつと `sdiff` をしてみると desc と enum に差がある。
+Enum は漏れだろうな。 desc はこっちも描画の対象だったか。
+
+```bash
+❯ sdiff -s markdownviews.yaml.ans markdown-view/config/crd/bases/view.say3no.github.io_markdownviews.yaml
+  name: markdownviews.view.zoetrope.github.io                 |   name: markdownviews.view.say3no.github.io
+  group: view.zoetrope.github.io                              |   group: view.say3no.github.io
+        description: MarkdownView is the Schema for the markd <
+                description: Markdowns contain the markdown f <
+                  The key indicates the file name and must no <
+                  The value is the content in markdown format <
+                description: Replicas is the number of viewer <
+                description: ViewerImage is the image name of |                 description: ViewerImage is the image name of
+            description: MarkdownViewStatus defines the obser <
+            enum:                                             <
+            - NotReady                                        <
+            - Available                                       <
+            - Healthy                                         <
+
+try_kubebuilder on  main [?⇡] on ☁️  (ap-northeast-1) 
+❯ 
+```
+
 ## RBAC マニフェストの生成
 ## Webhook マニフェストの生成

@@ -44,7 +44,7 @@ type MarkdownViewSpec struct {
 	ViewerImage string `json:"viewerImage,omitempty"`
 }
 
-// +kuberbuilder:validation:Enum=NotReady;Available;Healthy
+// +kubebuilder:validation:Enum=NotReady;Available;Healthy
 type MarkdownViewStatus string
 
 const (
@@ -58,6 +58,7 @@ const (
 // +kubebuilder:printcolumn:name="REPLICAS",type="integer",JSONPath=".spec.replicas"
 // +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status"
 
+// desc dayo
 type MarkdownView struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
