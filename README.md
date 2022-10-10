@@ -590,10 +590,10 @@ try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-no
 
 こういうことかな？
 
-| Makefile  | controller-gen |
-| :------------- | ------------- |
-| make manifest  | webhook, rbac, crd  |
-| make generate  | object  |
+| Makefile      | controller-gen     |
+| :------------ | ------------------ |
+| make generate | object             |
+| make manifest | webhook, rbac, crd |
 
 `schemapatch` はマップの中にないらしい。
 
@@ -812,3 +812,36 @@ try_kubebuilder/markdown-view on  main [!?] via 🐹 v1.19.2 on ☁️  (ap-n
 ```
 
 ## Webhook マニフェストの生成
+
+* Admission Webhook を利用するためには `MutatingWebhookConfiguration` や `ValidatingWebhookConfiguration` などの Manifest を用意する必要がある
+* `controller-gen` は `// +kubebuilder:webhook` マーカの記述に基づいてマニフェストを生成できる
+
+`controller-gen` が生成した wehbook の初期自体が含むマーカーについて
+
+```bash
+❯ cat ./api/v1/markdownview_webhook.go | grep +kube -A2
+//+kubebuilder:webhook:path=/mutate-view-say3no-github-io-v1-markdownview,mutating=true,failurePolicy=fail,sideEffects=None,groups=view.say3no.github.io,resources=markdownviews,verbs=create;update,versions=v1,name=mmarkdownview.kb.io,admissionReviewVersions=v1
+
+var _ webhook.Defaulter = &MarkdownView{}
+--
+//+kubebuilder:webhook:path=/validate-view-say3no-github-io-v1-markdownview,mutating=false,failurePolicy=fail,sideEffects=None,groups=view.say3no.github.io,resources=markdownviews,verbs=create;update,versions=v1,name=vmarkdownview.kb.io,admissionReviewVersions=v1
+
+var _ webhook.Validator = &MarkdownView{}
+
+try_kubebuilder/markdown-view on  main [!?] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ 
+```
+
+| key                      | desc         |
+| :----------------------  | ------------ |
+| admissionReviewVersions  | Webhook がサポートする AdmissionReview(?)の ver |
+| failurePolicy            | Webhook の呼び出し失敗時ポリシー. `fail` とか `ignore` とか|
+| groups,versions,resource | gvk |
+| mutating                 | Webhook で値を書き換えるか否か。 `Defaulter` は `true`, `Validator` は `false` だとか？|
+| name                     | dot で区切られた3つ以上のセグメントを持つドメイン名 |
+| path                     | Webhook のパスを指定 |
+| sideEffects              | Webhook API の呼び出しに副作用があるかどうか。dry-runで呼び出すときの挙動に関わる。`None` or `Some` |
+| verbs                    | `create`, `update` とか |
+
+
+
