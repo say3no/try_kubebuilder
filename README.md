@@ -865,6 +865,41 @@ try_kubebuilder/markdown-view on  main [!?] via 🐹 v1.19.2 on ☁️  (ap-n
 
 ## クライアントの使い方
 
+* CCを実装する前に、 k8s api にアクセスするためのクライアントライブラリを学ぶ
+* `controller-runtime` では k8s api にアクセスするための client library を提供している
+* この client は標準リソースとカスタムリソースと同じ用に扱うことができ、型安全でかんたんに利用できる
+
+kubebuilder が生成したコードのうち、初期化処理 `init` : (`cat ./main.go | grep init -B5 -A5`)
+
+```go
+var (
+        scheme   = runtime.NewScheme()
+        setupLog = ctrl.Log.WithName("setup")
+)
+
+func init() {
+        // clientgoschema では標準リソースの型を追加
+        utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+
+        // utilruntime ではカスタムリソースの型を追加: MarkdownView カスタムリソース
+        utilruntime.Must(viewv1.AddToScheme(scheme))
+        //+kubebuilder:scaffold:scheme
+}
+```
+
+* pkgs: `flags` は argv とってくるためのパーサーと思えば良さそう
+
+Reconcile の再掲
+
+* Reconciliation Loop
+  * コントローラーのメインロジック。リソースに記述された状態を理想とし、システムの現在の状態と比較し、その差分がなくなるように調整する処理を実行し続ける。
+    * これによって宣言的な状態を維持し続けるのだな
+  * 冪等
+    * Reconciliation Loop は冪等性を備えていなければならない
+    * Pod が3つなら、何度 Reconcile が呼ばれても Pod は3つにしなければならない
+      * 追加で3つつくったりしちゃだめよ
+
+
 ## Reconcile の実装
 
 ## コントローラーのテスト

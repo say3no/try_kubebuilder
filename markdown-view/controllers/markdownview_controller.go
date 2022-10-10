@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -25,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	viewv1 "github.com/try_kubebuilder/api/v1"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 // MarkdownViewReconciler reconciles a MarkdownView object
@@ -56,6 +58,16 @@ func (r *MarkdownViewReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	// TODO(user): your logic here
 
+	return ctrl.Result{}, nil
+}
+
+func (r *MarkdownViewReconciler) Reconcile_get(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	var deployment appsv1.Deployment
+	err := r.Get(ctx, client.ObjectKey{Namespace: "default", Name: "sample"}, &deployment)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	fmt.Printf("Got Deployment: %#v\n", deployment)
 	return ctrl.Result{}, nil
 }
 
