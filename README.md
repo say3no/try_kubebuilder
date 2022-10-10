@@ -513,3 +513,261 @@ $ kubectl rollout restart -n markdown-view-system deployment markdown-view-contr
 要するに変更を watch して action をするタスクランナーっぽい。
 こっちは後回しでいいや
 
+# controller-tools
+
+* Kubebuilder では CC の開発を補助するためのツール群として [controller-tools](https://github.com/kubernetes-sigs/controller-tools)を提供している。おもに以下3つからなるが、今回取り扱うのは controller-gen のみ
+  * controller-gen
+  * type-scaffold
+  * helpgen
+
+* controller-gen は Go のソースコードをもとに、 Manifest や Go のソースコードを生成する
+  
+のだが、自分の環境にはまだ `controller-gen cli` がインストールされていないようだ。
+とおもったが `find . | grep controller-gen` したら `./bin/` にあったわ ガハハ
+
+```bash
+❯ ./bin/controller-gen -h
+Usage:
+  controller-gen [flags]
+
+Examples:
+        # Generate RBAC manifests and crds for all types under apis/,
+        # outputting crds to /tmp/crds and everything else to stdout
+        controller-gen rbac:roleName=<role name> crd paths=./apis/... output:crd:dir=/tmp/crds output:stdout
+
+        # Generate deepcopy/runtime.Object implementations for a particular file
+        controller-gen object paths=./apis/v1beta1/some_types.go
+
+        # Generate OpenAPI v3 schemas for API packages and merge them into existing CRD manifests
+        controller-gen schemapatch:manifests=./manifests output:dir=./manifests paths=./pkg/apis/... 
+
+        # Run all the generators for a given project
+        controller-gen paths=./apis/...
+
+        # Explain the markers for generating CRDs, and their arguments
+        controller-gen crd -ww
+
+
+Flags:
+  -h, --detailed-help count   print out more detailed help
+                              (up to -hhh for the most detailed output, or -hhhh for json output)
+      --help                  print out usage and a summary of options
+      --version               show version
+  -w, --which-markers count   print out all markers available with the requested generators
+                              (up to -www for the most detailed output, or -wwww for json output)
+
+
+Options
+
+
+generators
+
++webhook                                                                                                                                           package  generates (partial) {Mutating,Validating}WebhookConfiguration objects.                        
++schemapatch[:generateEmbeddedObjectMeta=<bool>],manifests=<string>[,maxDescLen=<int>]                                                             package  patches existing CRDs with new schemata.                                                      
++rbac:roleName=<string>                                                                                                                            package  generates ClusterRole objects.                                                                
++object[:headerFile=<string>][,year=<string>]                                                                                                      package  generates code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.  
++crd[:allowDangerousTypes=<bool>][,crdVersions=<[]string>][,generateEmbeddedObjectMeta=<bool>][,ignoreUnexportedFields=<bool>][,maxDescLen=<int>]  package  generates CustomResourceDefinition objects.                                                   
+
+
+generic
+
++paths=<[]string>  package  represents paths and go-style path patterns to use as package roots.  
+
+
+output rules (optionally as output:<generator>:...)
+
++output:artifacts[:code=<string>],config=<string>  package  outputs artifacts to different locations, depending on whether they're package-associated or not.   
++output:dir=<string>                               package  outputs each artifact to the given directory, regardless of if it's package-associated or not.      
++output:none                                       package  skips outputting anything.                                                                          
++output:stdout                                     package  outputs everything to standard-out, with no separation.                                             
+
+
+try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯
+```
+
+>kubebuilderが生成したMakefileには、make manifestsとmake generateというターゲットが用意されており、make manifestsではwebhook, rbac, crdの生成、make generateではobjectの生成がおこなわれます。
+
+こういうことかな？
+
+| Makefile  | controller-gen |
+| :------------- | ------------- |
+| make manifest  | webhook, rbac, crd  |
+| make generate  | object  |
+
+`schemapatch` はマップの中にないらしい。
+
+Kubebuilder -> プロジェクトの雛形作成 -> `main.go` では、以下の記述があった。
+
+>これから作成するカスタムコントローラーのエントリーポイントとなるソースコードです。
+>
+>ソースコード中に**//+kubebuilder:scaffold:imports**, //+kubebuilder:scaffold:scheme, //+kubebuilder:scaffold:builderなどのコメントが記述されています。 Kubebuilderはこれらのコメントを目印にソースコードの自動生成をおこなうので、決して削除しないように注意してください。
+
+
+`cntroller-gen` は、 `go` のコードから、 CC のための `go`, それに対応した Maniest を生成する際には、こうした情報をマーカーとしてやっているらしい。
+
+```mermaid
+
+graph TD;
+    ./main.go-->some_go_files.goに
+    ./main.go-->some_manifetst.yaml;
+```
+
+`controller-gen` のマーカー一覧は、 `-w` オプションで確認できる
+
+webhook のマーカーは一つしかない
+
+```bash
+❯ ./bin/controller-gen webhook -w
+
+Webhook
+
++kubebuilder:webhook:admissionReviewVersions=<[]string>,failurePolicy=<string>,groups=<[]string>[,matchPolicy=<string>],mutating=<bool>,name=<string>,path=<string>,resources=<[]string>[,sideEffects=<string>],verbs=<[]string>,versions=<[]string>[,webhookVersions=<[]string>]  package  specifies how a webhook should be served.   
+
+
+try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ 
+```
+
+<details>
+<summar> Custom Resource Definision はいっぱいある </summary>
+
+```bash
+❯ ./bin/controller-gen crd -w        
+
+CRD
+
++groupName=<string>                                                                                                               package  specifies the API group name for this package.                                    
++kubebuilder:deprecatedversion[:warning=<string>]                                                                                 type     marks this version as deprecated.                                                 
++kubebuilder:printcolumn:JSONPath=<string>[,description=<string>][,format=<string>],name=<string>[,priority=<int>],type=<string>  type     adds a column to "kubectl get" output for this CRD.                               
++kubebuilder:resource[:categories=<[]string>][,path=<string>][,scope=<string>][,shortName=<[]string>][,singular=<string>]         type     configures naming and scope for a CRD.                                            
++kubebuilder:skip                                                                                                                 package  don't consider this package as an API version.                                    
++kubebuilder:skipversion                                                                                                          type     removes the particular version of the CRD from the CRDs spec.                     
++kubebuilder:storageversion                                                                                                       type     marks this version as the "storage version" for the CRD for conversion.           
++kubebuilder:subresource:scale[:selectorpath=<string>],specpath=<string>,statuspath=<string>                                      type     enables the "/scale" subresource on a CRD.                                        
++kubebuilder:subresource:status                                                                                                   type     enables the "/status" subresource on a CRD.                                       
++kubebuilder:unservedversion                                                                                                      type     does not serve this version.                                                      
++versionName=<string>                                                                                                             package  overrides the API group version for this package (defaults to the package name).  
+
+
+CRD processing
+
++kubebuilder:pruning:PreserveUnknownFields      type   PreserveUnknownFields stops the apiserver from pruning fields which are not specified.                                                                            
++kubebuilder:pruning:PreserveUnknownFields      field  PreserveUnknownFields stops the apiserver from pruning fields which are not specified.                                                                            
++kubebuilder:validation:XPreserveUnknownFields  type   PreserveUnknownFields stops the apiserver from pruning fields which are not specified.                                                                            
++kubebuilder:validation:XPreserveUnknownFields  field  PreserveUnknownFields stops the apiserver from pruning fields which are not specified.                                                                            
++listMapKey=<string>                            type   specifies the keys to map listTypes.                                                                                                                              
++listMapKey=<string>                            field  specifies the keys to map listTypes.                                                                                                                              
++listType=<string>                              type   specifies the type of data-structure that the list represents (map, set, atomic).                                                                                 
++listType=<string>                              field  specifies the type of data-structure that the list represents (map, set, atomic).                                                                                 
++mapType=<string>                               type   specifies the level of atomicity of the map; i.e. whether each item in the map is independent of the others, or all fields are treated as a single unit.          
++mapType=<string>                               field  specifies the level of atomicity of the map; i.e. whether each item in the map is independent of the others, or all fields are treated as a single unit.          
++structType=<string>                            type   specifies the level of atomicity of the struct; i.e. whether each field in the struct is independent of the others, or all fields are treated as a single unit.   
++structType=<string>                            field  specifies the level of atomicity of the struct; i.e. whether each field in the struct is independent of the others, or all fields are treated as a single unit.   
+
+
+CRD validation
+
++kubebuilder:default=<any>                                            field    sets the default value for this field.                                                               
++kubebuilder:validation:EmbeddedResource                              field    EmbeddedResource marks a fields as an embedded resource with apiVersion, kind and metadata fields.   
++kubebuilder:validation:Enum=<[]any>                                  field    specifies that this (scalar) field is restricted to the *exact* values specified here.               
++kubebuilder:validation:Enum=<[]any>                                  type     specifies that this (scalar) field is restricted to the *exact* values specified here.               
++kubebuilder:validation:ExclusiveMaximum=<bool>                       field    indicates that the maximum is "up to" but not including that value.                                  
++kubebuilder:validation:ExclusiveMaximum=<bool>                       type     indicates that the maximum is "up to" but not including that value.                                  
++kubebuilder:validation:ExclusiveMinimum=<bool>                       field    indicates that the minimum is "up to" but not including that value.                                  
++kubebuilder:validation:ExclusiveMinimum=<bool>                       type     indicates that the minimum is "up to" but not including that value.                                  
++kubebuilder:validation:Format=<string>                               type     specifies additional "complex" formatting for this field.                                            
++kubebuilder:validation:Format=<string>                               field    specifies additional "complex" formatting for this field.                                            
++kubebuilder:validation:MaxItems=<int>                                field    specifies the maximum length for this list.                                                          
++kubebuilder:validation:MaxItems=<int>                                type     specifies the maximum length for this list.                                                          
++kubebuilder:validation:MaxLength=<int>                               field    specifies the maximum length for this string.                                                        
++kubebuilder:validation:MaxLength=<int>                               type     specifies the maximum length for this string.                                                        
++kubebuilder:validation:MaxProperties=<int>                           field    restricts the number of keys in an object                                                            
++kubebuilder:validation:MaxProperties=<int>                           type     restricts the number of keys in an object                                                            
++kubebuilder:validation:Maximum=<>                                    field    specifies the maximum numeric value that this field can have.                                        
++kubebuilder:validation:Maximum=<>                                    type     specifies the maximum numeric value that this field can have.                                        
++kubebuilder:validation:MinItems=<int>                                type     specifies the minimun length for this list.                                                          
++kubebuilder:validation:MinItems=<int>                                field    specifies the minimun length for this list.                                                          
++kubebuilder:validation:MinLength=<int>                               field    specifies the minimum length for this string.                                                        
++kubebuilder:validation:MinLength=<int>                               type     specifies the minimum length for this string.                                                        
++kubebuilder:validation:MinProperties=<int>                           field    restricts the number of keys in an object                                                            
++kubebuilder:validation:MinProperties=<int>                           type     restricts the number of keys in an object                                                            
++kubebuilder:validation:Minimum=<>                                    type     specifies the minimum numeric value that this field can have. Negative numbers are supported.        
++kubebuilder:validation:Minimum=<>                                    field    specifies the minimum numeric value that this field can have. Negative numbers are supported.        
++kubebuilder:validation:MultipleOf=<>                                 field    specifies that this field must have a numeric value that's a multiple of this one.                   
++kubebuilder:validation:MultipleOf=<>                                 type     specifies that this field must have a numeric value that's a multiple of this one.                   
++kubebuilder:validation:Optional                                      field    specifies that this field is optional, if fields are required by default.                            
++kubebuilder:validation:Optional                                      package  specifies that all fields in this package are optional by default.                                   
++kubebuilder:validation:Pattern=<string>                              type     specifies that this string must match the given regular expression.                                  
++kubebuilder:validation:Pattern=<string>                              field    specifies that this string must match the given regular expression.                                  
++kubebuilder:validation:Required                                      field    specifies that this field is required, if fields are optional by default.                            
++kubebuilder:validation:Required                                      package  specifies that all fields in this package are required by default.                                   
++kubebuilder:validation:Schemaless                                    field    marks a field as being a schemaless object.                                                          
++kubebuilder:validation:Type=<string>                                 field    overrides the type for this field (which defaults to the equivalent of the Go type).                 
++kubebuilder:validation:Type=<string>                                 type     overrides the type for this field (which defaults to the equivalent of the Go type).                 
++kubebuilder:validation:UniqueItems=<bool>                            field    specifies that all items in this list must be unique.                                                
++kubebuilder:validation:UniqueItems=<bool>                            type     specifies that all items in this list must be unique.                                                
++kubebuilder:validation:XEmbeddedResource                             field    EmbeddedResource marks a fields as an embedded resource with apiVersion, kind and metadata fields.   
++kubebuilder:validation:XEmbeddedResource                             type     EmbeddedResource marks a fields as an embedded resource with apiVersion, kind and metadata fields.   
++kubebuilder:validation:XIntOrString                                  type     IntOrString marks a fields as an IntOrString.                                                        
++kubebuilder:validation:XIntOrString                                  field    IntOrString marks a fields as an IntOrString.                                                        
++kubebuilder:validation:XValidation[:message=<string>],rule=<string>  type     marks a field as requiring a value for which a given expression evaluates to true.                   
++kubebuilder:validation:XValidation[:message=<string>],rule=<string>  field    marks a field as requiring a value for which a given expression evaluates to true.                   
++nullable                                                             field    marks this field as allowing the "null" value.                                                       
++optional                                                             field    specifies that this field is optional, if fields are required by default.                            
+
+
+try_kubebuilder/markdown-view on  main [!] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ 
+```
+
+</details>
+
+## CRD マニフェストの生成
+
+* CRD の定義は OpenAPIv3 の yaml で記述するといった。 CRD の Manifest は複雑で手書きは骨が折れる
+* Kubebuilder の controller-gen は、 Go で記述した Struct から CRD を生成できる
+
+以下は、`kubebuilder create api` の初期生成コードを `cat api/v1/markdownview_types.go| grep -v // | grep package -A300` でトリムしたもの。
+`controller-gen` はこれらの構造体と Marker を頼りに CRD を生成する。
+
+```go
+package v1
+
+import (
+        metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+type MarkdownViewSpec struct {
+        Foo string `json:"foo,omitempty"`
+}
+
+type MarkdownViewStatus struct {
+}
+
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+
+type MarkdownView struct {
+        metav1.TypeMeta   `json:",inline"`
+        metav1.ObjectMeta `json:"metadata,omitempty"`
+        Spec   MarkdownViewSpec   `json:"spec,omitempty"`
+        Status MarkdownViewStatus `json:"status,omitempty"`
+}
+
+//+kubebuilder:object:root=true
+
+type MarkdownViewList struct {
+        metav1.TypeMeta `json:",inline"`
+        metav1.ListMeta `json:"metadata,omitempty"`
+        Items           []MarkdownView `json:"items"`
+}
+
+func init() {
+        SchemeBuilder.Register(&MarkdownView{}, &MarkdownViewList{})
+}
+```
+
+
+## RBAC マニフェストの生成
+## Webhook マニフェストの生成
