@@ -794,4 +794,21 @@ try_kubebuilder on  main [?⇡] on ☁️  (ap-northeast-1)
 ```
 
 ## RBAC マニフェストの生成
+
+* k8sはRBAC(Role-based access control)により、リソースへのアクセス権を制御できる
+* CCにおいても、生成するリソースにのみアクセスできるように適切な権限を設定する必要がある。
+* `controller-gen` では、 Go のソースコード宙に埋め込まれたマーカーをもとにRBAの目にフェストを生成できる
+
+まず、 `kubebuilder` が生成した初期状態のマーカを見てみる。
+
+```bash
+❯ cat ./controllers/markdownview_controller.go | grep +kubebuilder
+//+kubebuilder:rbac:groups=view.say3no.github.io,resources=markdownviews,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=view.say3no.github.io,resources=markdownviews/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=view.say3no.github.io,resources=markdownviews/finalizers,verbs=update
+
+try_kubebuilder/markdown-view on  main [!?] via 🐹 v1.19.2 on ☁️  (ap-northeast-1) 
+❯ 
+```
+
 ## Webhook マニフェストの生成
